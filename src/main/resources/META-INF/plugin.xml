@@ -1,0 +1,25 @@
+<idea-plugin>
+    <id>com.example.claudepanel</id>
+    <name>Claude Panel</name>
+    <vendor>local</vendor>
+    <description><![CDATA[
+        Dedicated tool window that runs the <code>claude</code> CLI,
+        keeping the main Terminal tool window free.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>org.jetbrains.plugins.terminal</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow
+            id="Claude"
+            anchor="right"
+            canCloseContents="false"
+            factoryClass="com.example.claudepanel.ClaudeToolWindowFactory"/>
+        <applicationConfigurable
+            parentId="tools"
+            id="com.example.claudepanel.settings"
+            displayName="Claude Panel"
+            instance="com.example.claudepanel.ClaudePanelConfigurable"/>
+    </extensions>
+</idea-plugin>

@@ -33,3 +33,8 @@ intellijPlatform {
         }
     }
 }
+
+// Disable instrumentCode task (JetBrains packages path doesn't exist on Windows)
+tasks.named("instrumentCode") {
+    enabled = false
+}

@@ -51,11 +51,9 @@ class ClaudePanelController(
         val intro = JBLabel(
             """
             <html>
-            <p style='margin:0'>Works best with the <b>Claude Code</b> plugin installed.</p>
             <p style='margin:6px 0 0 0'>
-                If Claude has taken over your Terminal window, launch it here instead —
-                a dedicated side panel just for your AI sessions — and keep your main
-                <b>Terminal</b> window free for the commands you actually run.
+                I wanted the Claude code plugin without it loosing my terminal! <br>
+                Use this side terminal just for your AI sessions and keep your main window free for the commands you actually run.
             </p>
             </html>
             """.trimIndent()

@@ -71,6 +71,17 @@ class ClaudePanelController(
 
     private fun launch(command: String) {
         if (project.isDisposed) return
+        if (command.isBlank()) {
+            showTerminal(LaunchConfig(command, runCommand = false))
+            return
+        }
+        showTerminal(LaunchConfig(command, runCommand = true))
+    }
+
+    private data class LaunchConfig(val command: String, val runCommand: Boolean)
+
+    private fun showTerminal(launch: LaunchConfig) {
+        if (currentWidget != null) return // a session is already active
         val runner = LocalTerminalDirectRunner.createTerminalRunner(project)
 
         val session = Disposer.newDisposable("claude-panel-session")
@@ -79,7 +90,7 @@ class ClaudePanelController(
         val widget = try {
             runner.createTerminalWidget(session, project.basePath, true) as? ShellTerminalWidget
         } catch (e: Exception) {
-            LOG.warn("Failed to create terminal widget for '$command'", e)
+            LOG.warn("Failed to create terminal widget for launch '${launch.command}'", e)
             Disposer.dispose(session)
             return
         } ?: run {
@@ -103,16 +114,18 @@ class ClaudePanelController(
         revalidate()
         repaint()
 
-        // Give the shell a moment to become ready before sending the command.
-        val timer = Timer(300, java.awt.event.ActionListener {
-            try {
-                widget.executeCommand(command)
-            } catch (ex: Exception) {
-                LOG.warn("Failed to execute '$command'", ex)
-            }
-        })
-        timer.isRepeats = false
-        timer.start()
+        // Give the shell a moment to become ready, then optionally send the command.
+        if (launch.runCommand) {
+            val timer = Timer(300, java.awt.event.ActionListener {
+                try {
+                    widget.executeCommand(launch.command)
+                } catch (ex: Exception) {
+                    LOG.warn("Failed to execute '${launch.command}'", ex)
+                }
+            })
+            timer.isRepeats = false
+            timer.start()
+        }
     }
 
     private fun onSessionEnded() {
@@ -161,7 +174,8 @@ class ClaudePanelController(
         private val AGENT_COMMANDS = listOf(
             "claude" to "claude",
             "Ollama (Claude)" to "ollama launch claude",
-            "Ollama (Pi)" to "ollama launch pi"
+            "Ollama (Pi)" to "ollama launch pi",
+            "Just a shell" to ""
         )
     }
 }

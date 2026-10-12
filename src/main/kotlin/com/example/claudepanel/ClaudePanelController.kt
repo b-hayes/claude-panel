@@ -48,6 +48,22 @@ class ClaudePanelController(
         panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
         panel.isOpaque = false
 
+        val intro = JBLabel(
+            """
+            <html>
+            <p style='margin:0'>Works best with the <b>Claude Code</b> plugin installed.</p>
+            <p style='margin:6px 0 0 0'>
+                If Claude has taken over your Terminal window, launch it here instead —
+                a dedicated side panel just for your AI sessions — and keep your main
+                <b>Terminal</b> window free for the commands you actually run.
+            </p>
+            </html>
+            """.trimIndent()
+        )
+        intro.horizontalAlignment = SwingConstants.LEFT
+        panel.add(intro)
+        panel.add(Box.createVerticalStrut(16))
+
         val title = JBLabel("Choose a command to run:")
         title.horizontalAlignment = SwingConstants.CENTER
         panel.add(title)

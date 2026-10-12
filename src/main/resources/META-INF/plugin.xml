@@ -4,7 +4,10 @@
     <vendor>local</vendor>
     <description><![CDATA[
         Dedicated tool window that runs an agent CLI (Claude Code, Ollama Claude or Ollama Pi),
-        keeping the main Terminal tool window free. Asks which command to run every time,
+        keeping the main Terminal tool window free. Works best with the Claude Code plugin
+        installed: if Claude has taken over your Terminal window, launch it here instead —
+        a side panel just for your AI sessions — and keep your main Terminal window free
+        for the commands you actually run. Asks which command to run every time,
         and returns to the menu when the process exits.
     ]]></description>
 

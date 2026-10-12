@@ -1,6 +1,6 @@
 <idea-plugin>
     <id>com.example.claudepanel</id>
-    <name>Claude Panel</name>
+    <name>Claude Panel TEST</name>
     <vendor>local</vendor>
     <description><![CDATA[
         Dedicated tool window that runs the <code>claude</code> CLI,

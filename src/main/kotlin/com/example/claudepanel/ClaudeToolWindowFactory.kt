@@ -18,6 +18,7 @@ import javax.swing.SwingUtilities
 
 class ClaudeToolWindowFactory : ToolWindowFactory {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
+        Messages.showInfoMessage(project, "VERSION 0.1.1 - PLUGIN LOADING", "DEBUG")
         val widget = LocalTerminalDirectRunner.createTerminalRunner(project)
             .createTerminalWidget(toolWindow.disposable, project.basePath, true)
 

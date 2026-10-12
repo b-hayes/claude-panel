@@ -12,20 +12,21 @@ class CommandSelectionDialog(project: Project) : DialogWrapper(project) {
 
     init {
         title = "Claude Panel"
+        list.selectedIndex = 0
         init()
     }
 
     override fun createCenterPanel(): JComponent {
-        return JPanel(BorderLayout()).apply {
-            add(list, BorderLayout.CENTER)
-            val buttonPanel = JPanel()
-            val okButton = JButton("OK")
-            okButton.addActionListener {
-                close(DialogWrapper.OK_EXIT_CODE)
-            }
-            buttonPanel.add(okButton)
-            add(buttonPanel, BorderLayout.SOUTH)
+        val panel = JPanel(BorderLayout())
+        panel.add(list, BorderLayout.CENTER)
+        val buttonPanel = JPanel()
+        val okButton = JButton("OK")
+        okButton.addActionListener {
+            close(DialogWrapper.OK_EXIT_CODE)
         }
+        buttonPanel.add(okButton)
+        panel.add(buttonPanel, BorderLayout.SOUTH)
+        return panel
     }
 
     fun getSelectedOption(): String? {

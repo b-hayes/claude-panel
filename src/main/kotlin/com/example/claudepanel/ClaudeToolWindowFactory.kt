@@ -46,12 +46,18 @@ class ClaudeToolWindowFactory : ToolWindowFactory {
     }
 
     private fun showAgentSelectionDialog(project: Project, shell: ShellTerminalWidget?) {
+        println("DEBUG: showAgentSelectionDialog called")
         val dialog = CommandSelectionDialog(project)
         if (dialog.showAndGet()) {
             val selected = dialog.getSelectedOption()
             if (selected != null) {
+                println("DEBUG: Selected command: $selected")
                 shell?.executeCommand(selected)
+            } else {
+                println("DEBUG: Selection was Cancel or nothing")
             }
+        } else {
+            println("DEBUG: Dialog was closed without OK")
         }
     }
 

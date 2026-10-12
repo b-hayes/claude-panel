@@ -36,15 +36,18 @@ After making code changes to this project, offer to build and run this reinstall
 
 ## Architecture
 
-Single-class plugin. Two files do everything:
+Single-window plugin with a small controller. Key files:
 
 - `src/main/resources/META-INF/plugin.xml` — registers the `Claude` tool window via the `com.intellij.toolWindow` extension point. Depends on the bundled `org.jetbrains.plugins.terminal` plugin.
-- `src/main/kotlin/com/example/claudepanel/ClaudeToolWindowFactory.kt` — `ToolWindowFactory` that uses `LocalTerminalDirectRunner.createTerminalRunner(project).createTerminalWidget(...)` to embed a terminal widget into the tool window's content, then calls `widget.executeCommand("claude")` to launch the CLI on first open.
+- `src/main/kotlin/com/example/claudepanel/ClaudeToolWindowFactory.kt` — creates a `ClaudePanelController` panel as the tool window content.
+- `src/main/kotlin/com/example/claudepanel/ClaudePanelController.kt` — a `CardLayout` panel with two cards:
+  - **menu** — buttons for the fixed agent commands (`claude`, `ollama launch claude`, `ollama launch pi`);
+  - **terminal** — the live `ShellTerminalWidget` (created via `LocalTerminalDirectRunner.createTerminalRunner(project).createTerminalWidget(...)`, started with `widget.executeCommand(cmd)` after a short delay for shell readiness).
 
-The shell used is whatever PhpStorm's Settings → Tools → Terminal → Shell path points to. `claude` must be on PATH.
+  A `TerminalWidgetListener.allSessionsClosed` listener switches back to the menu card when the process exits. An `IdeEventQueue.EventDispatcher` preserves the Escape (submit, `0x1b`) / Shift+Enter (bracketed paste) key bindings each session needs. Note: this 2024.3 target has no `JBButton` on the compile classpath — use `javax.swing.JButton`.
 
 Targets IntelliJ Platform 2024.3 (`sinceBuild = "243"`, `untilBuild = null`). Kotlin JVM toolchain 21. Uses the `org.jetbrains.intellij.platform` Gradle plugin (v2.x) — note this is the newer plugin, APIs differ from the legacy `org.jetbrains.intellij`.
 
-## Known quirk
+## Notes
 
-If `executeCommand` fires before the shell is ready on first launch, the `claude` command may not run. Workaround: close and re-open the tool window. Any fix should account for terminal-widget readiness before invoking `executeCommand`.
+The shell used is whatever PhpStorm's Settings → Tools → Terminal → Shell path points to; the chosen command must be on PATH. `executeCommand` must only be called once the widget's shell is ready — the controller delays the first command via a one-shot `javax.swing.Timer`. Kotlin quirk: `javax.swing.Timer(300)` alone fails overload resolution ("No value passed for parameter 'p1'") — pass the listener in the constructor: `Timer(300, ActionListener)`.

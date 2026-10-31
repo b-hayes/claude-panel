@@ -13,21 +13,23 @@ import com.jediterm.terminal.ui.TerminalWidgetListener
 import org.jetbrains.plugins.terminal.LocalTerminalDirectRunner
 import org.jetbrains.plugins.terminal.ShellTerminalWidget
 import java.awt.CardLayout
+import java.awt.BorderLayout
+import java.awt.Component
 import java.awt.KeyboardFocusManager
+import java.awt.event.ActionEvent
+import java.awt.event.ActionListener
 import java.awt.event.KeyEvent
 import javax.swing.Box
 import javax.swing.BoxLayout
 import javax.swing.JButton
+import javax.swing.JComboBox
 import javax.swing.JPanel
 import javax.swing.SwingConstants
 import javax.swing.Timer
+import javax.swing.SwingUtilities.invokeLater
 
 /**
  * Content for the Claude tool window.
- *
- * Shows a menu asking which agent command to run. When a command is selected,
- * a terminal session is started with that command. When the terminal process
- * ends, the menu is shown again so the user can start a new session.
  */
 class ClaudePanelController(
     private val project: Project,
@@ -37,6 +39,7 @@ class ClaudePanelController(
     private val card = CardLayout()
     private var currentWidget: ShellTerminalWidget? = null
     private var currentSession: Disposable? = null
+    private var dropdownPanel: DropdownPanel? = null
 
     init {
         layout = card
@@ -67,20 +70,50 @@ class ClaudePanelController(
         panel.add(title)
         panel.add(Box.createVerticalStrut(12))
 
-        for ((label, command) in AGENT_COMMANDS) {
-            val button = JButton(label)
-            button.addActionListener { launch(command) }
-            button.horizontalAlignment = SwingConstants.CENTER
-            panel.add(button)
-            panel.add(Box.createVerticalStrut(6))
+        // Replace static buttons with dropdown panel
+        dropdownPanel = createProviderModelSelector()
+
+        // Wire up the dropdown panel callback
+        dropdownPanel?.let { panel ->
+            panel.setOnChange { provider, model ->
+                val config = when (provider.lowercase()) {
+                    "default" -> LaunchConfig("claude --model $model", runCommand = false)
+                    "ollama" -> {
+                        val ollamaCmd = if (model == "N/A - command not found") "" else "ollama launch $model"
+                        LaunchConfig(ollamaCmd, model.isNotBlank() && !model.startsWith("N/A"))
+                    }
+                    "openrouter" -> {
+                        val model = provider
+                        val command = """ANTHROPIC_BASE_URL=https://openrouter.ai/api/v1 \
+                            ANTHROPIC_AUTH_TOKEN=openrouter \
+                            AGENT_BACKEND=openrouter \
+                            CLAUDE_CODE_MAX_OUTPUT_TOKENS=16000 \
+                            CLAUDE_CODE_DISABLE_BUNDLED_SKILLS=1 \
+                            claude --model $model"""
+                        LaunchConfig(command, runCommand = true)
+                    }
+                    else -> LaunchConfig("", runCommand = false)
+                }
+
+                ApplicationManager.getApplication().invokeLater {
+                    showTerminal(config)
+                }
+            }
         }
 
+        // Add a separator and hint text
         panel.add(Box.createVerticalGlue())
         val hint = JBLabel("<html><center>The panel returns to this menu<br>when the process exits.</center></html>")
         hint.foreground = hint.foreground?.let { java.awt.Color(it.red, it.green, it.blue, 128) }
         hint.horizontalAlignment = SwingConstants.CENTER
         panel.add(hint)
+
         return panel
+    }
+
+    private fun createProviderModelSelector(): DropdownPanel {
+        val dropdown = DropdownPanel()
+        return dropdown
     }
 
     private fun launch(command: String) {
@@ -130,11 +163,13 @@ class ClaudePanelController(
 
         // Give the shell a moment to become ready, then optionally send the command.
         if (launch.runCommand) {
-            val timer = Timer(300, java.awt.event.ActionListener {
-                try {
-                    widget.executeCommand(launch.command)
-                } catch (ex: Exception) {
-                    LOG.warn("Failed to execute '${launch.command}'", ex)
+            val timer = javax.swing.Timer(300, object : ActionListener {
+                override fun actionPerformed(e: ActionEvent?) {
+                    try {
+                        widget.executeCommand(launch.command)
+                    } catch (ex: Exception) {
+                        LOG.warn("Failed to execute '${launch.command}'", ex)
+                    }
                 }
             })
             timer.isRepeats = false
@@ -185,11 +220,7 @@ class ClaudePanelController(
         private const val CARD_MENU = "menu"
         private const val CARD_TERMINAL = "terminal"
 
-        private val AGENT_COMMANDS = listOf(
-            "claude" to "claude",
-            "Ollama (Claude)" to "ollama launch claude",
-            "Ollama (Pi)" to "ollama launch pi",
-            "Just a shell" to ""
-        )
+        // These are no longer used since we're using the dropdown panel instead
+        private val AGENT_COMMANDS = listOf("default")
     }
 }

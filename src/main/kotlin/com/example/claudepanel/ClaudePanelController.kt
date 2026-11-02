@@ -13,7 +13,6 @@ import com.jediterm.terminal.ui.TerminalWidgetListener
 import org.jetbrains.plugins.terminal.LocalTerminalDirectRunner
 import org.jetbrains.plugins.terminal.ShellTerminalWidget
 import java.awt.CardLayout
-import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.KeyboardFocusManager
 import java.awt.event.ActionEvent
@@ -21,12 +20,7 @@ import java.awt.event.ActionListener
 import java.awt.event.KeyEvent
 import javax.swing.Box
 import javax.swing.BoxLayout
-import javax.swing.JButton
-import javax.swing.JComboBox
 import javax.swing.JPanel
-import javax.swing.SwingConstants
-import javax.swing.Timer
-import javax.swing.SwingUtilities.invokeLater
 
 /**
  * Content for the Claude tool window.
@@ -60,61 +54,65 @@ class ClaudePanelController(
             </html>
             """.trimIndent()
         )
-        intro.horizontalAlignment = SwingConstants.LEFT
+        intro.alignmentX = Component.LEFT_ALIGNMENT
         panel.add(intro)
         panel.add(Box.createVerticalStrut(16))
 
         val title = JBLabel("Choose a command to run:")
-        title.horizontalAlignment = SwingConstants.CENTER
+        title.alignmentX = Component.LEFT_ALIGNMENT
         panel.add(title)
         panel.add(Box.createVerticalStrut(12))
 
-        // Create dropdown panel inline and wire up callback immediately
         val dropdownPanel = DropdownPanel().apply {
+            alignmentX = Component.LEFT_ALIGNMENT
+            maximumSize = java.awt.Dimension(Int.MAX_VALUE, preferredSize.height)
             setOnChange { provider, model ->
-                val config = when (provider.lowercase()) {
-                    "default" -> LaunchConfig("claude --model $model", runCommand = false)
-                    "ollama" -> {
-                        val ollamaCmd = if (model == "N/A - command not found") "" else "ollama launch $model"
-                        LaunchConfig(ollamaCmd, model.isNotBlank() && !model.startsWith("N/A"))
-                    }
-                    "openrouter" -> {
-                        val modelStr = provider
-                        val command = """ANTHROPIC_BASE_URL=https://openrouter.ai/api/v1 \
-                            ANTHROPIC_AUTH_TOKEN=openrouter \
-                            AGENT_BACKEND=openrouter \
-                            CLAUDE_CODE_MAX_OUTPUT_TOKENS=16000 \
-                            CLAUDE_CODE_DISABLE_BUNDLED_SKILLS=1 \
-                            claude --model $modelStr"""
-                        LaunchConfig(command, runCommand = true)
-                    }
-                    else -> LaunchConfig("", runCommand = false)
-                }
-
-                ApplicationManager.getApplication().invokeLater {
-                    showTerminal(config)
-                }
+                val config = launchConfigFor(provider, model)
+                ApplicationManager.getApplication().invokeLater { showTerminal(config) }
             }
         }
+        panel.add(dropdownPanel)
 
-        // Add a separator and hint text
         panel.add(Box.createVerticalGlue())
         val hint = JBLabel("<html><center>The panel returns to this menu<br>when the process exits.</center></html>")
         hint.foreground = hint.foreground?.let { java.awt.Color(it.red, it.green, it.blue, 128) }
-        hint.horizontalAlignment = SwingConstants.CENTER
+        hint.alignmentX = Component.LEFT_ALIGNMENT
         panel.add(hint)
 
         return panel
     }
 
-    private fun launch(command: String) {
-        if (project.isDisposed) return
-        if (command.isBlank()) {
-            showTerminal(LaunchConfig(command, runCommand = false))
-            return
+    private fun launchConfigFor(provider: String, model: String): LaunchConfig {
+        if (model.startsWith("N/A")) return LaunchConfig("", runCommand = false)
+        return when (provider.lowercase()) {
+            "default" -> LaunchConfig(anthropicCommand(model), runCommand = true)
+            "ollama" -> LaunchConfig(
+                backendCommand("http://localhost:11434", "ollama", "host", model), runCommand = true
+            )
+            "openrouter" -> LaunchConfig(
+                backendCommand("https://openrouter.ai/api/v1", "openrouter", "openrouter", model),
+                runCommand = true
+            )
+            else -> LaunchConfig("", runCommand = false)
         }
-        showTerminal(LaunchConfig(command, runCommand = true))
     }
+
+    private fun systemPromptArg(): String {
+        val dir = project.basePath ?: "."
+        val prompt = "You are a Claude Code agent for the project in $dir. Stay within this " +
+            "directory - do not read or write files outside of it unless the user explicitly asks you to."
+        return "--append-system-prompt \"$prompt\""
+    }
+
+    private fun anthropicCommand(model: String): String =
+        "MAX_THINKING_TOKENS=0 CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1 " +
+            "claude --model $model ${systemPromptArg()}"
+
+    private fun backendCommand(baseUrl: String, authToken: String, backend: String, model: String): String =
+        "ANTHROPIC_BASE_URL=$baseUrl ANTHROPIC_AUTH_TOKEN=$authToken AGENT_BACKEND=$backend " +
+            "CLAUDE_CODE_MAX_OUTPUT_TOKENS=16000 CLAUDE_CODE_DISABLE_BUNDLED_SKILLS=1 " +
+            "MAX_THINKING_TOKENS=0 CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1 " +
+            "claude --model $model ${systemPromptArg()}"
 
     private data class LaunchConfig(val command: String, val runCommand: Boolean)
 
@@ -210,8 +208,5 @@ class ClaudePanelController(
 
         private const val CARD_MENU = "menu"
         private const val CARD_TERMINAL = "terminal"
-
-        // These are no longer used since we're using the dropdown panel instead
-        private val AGENT_COMMANDS = listOf("default")
     }
 }

@@ -12,18 +12,25 @@ class DropdownPanel : JPanel() {
     private var onSelectedChanged: ((provider: String, model: String) -> Unit)? = null
     private val providerBox = JComboBox<String>()
     private val modelBox = JComboBox<String>()
+    private var repopulating = false
 
     init {
         layout = FlowLayout(FlowLayout.LEFT)
         isOpaque = false
 
-        // Configure provider dropdown
         providerBox.addItemsToModel("default", "ollama", "openrouter")
         providerBox.isEditable = false
         providerBox.addActionListener { _ -> updateModelDropdown() }
 
-        // Configure model dropdown - add default item initially
         modelBox.isEditable = false
+        modelBox.addActionListener { _ ->
+            if (repopulating) return@addActionListener
+            val provider = (providerBox.selectedItem as? String) ?: return@addActionListener
+            val model = (modelBox.selectedItem as? String) ?: return@addActionListener
+            onSelectedChanged?.invoke(provider, model)
+        }
+
+        updateModelDropdown()
 
         val separator = object : JPanel() {
             init {
@@ -34,42 +41,30 @@ class DropdownPanel : JPanel() {
             }
         }
 
-        add(providerBox, 0)
-        add(separator, 0)
-        add(modelBox, 0)
+        add(providerBox)
+        add(separator)
+        add(modelBox)
     }
 
     private fun updateModelDropdown() {
         val provider = (providerBox.selectedItem as? String) ?: "default"
 
+        repopulating = true
+        modelBox.removeAllItems()
         when (provider.lowercase()) {
-            "default" -> {
-                modelBox.removeAllItems()
-                modelBox.addItem("default")
-            }
+            "default" -> modelBox.addItem("claude-opus-4-8")
             "ollama" -> {
-                if (!isOllamaAvailable()) {
-                    modelBox.removeAllItems()
+                if (isOllamaAvailable()) {
+                    listOf("qwen3.5:9b", "qwen2.5-coder:14b", "glm-4.7-flash:latest")
+                        .forEach { modelBox.addItem(it) }
+                } else {
                     modelBox.addItem("N/A - command not found")
-                    return
                 }
-                modelBox.removeAllItems()
-
-                // Add known models for Ollama
-                modelBox.addItem("qwen3.5:9b")
-                modelBox.addItem("qwen2.5-coder:14b")
-                modelBox.addItem("glm-4.7-flash:latest")
             }
-            "openrouter" -> {
-                val models = listOf(
-                    "z-ai/glm-5",
-                    "z-ai/glm-5.3-flash",
-                    "cohere/north-mini-code:free"
-                )
-                modelBox.removeAllItems()
-                models.forEach { modelBox.addItem(it) }
-            }
+            "openrouter" -> listOf("z-ai/glm-5", "z-ai/glm-5.3-flash", "cohere/north-mini-code:free")
+                .forEach { modelBox.addItem(it) }
         }
+        repopulating = false
     }
 
     private fun isOllamaAvailable(): Boolean {

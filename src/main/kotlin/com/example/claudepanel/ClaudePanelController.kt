@@ -79,13 +79,12 @@ class ClaudePanelController(
                         LaunchConfig(ollamaCmd, model.isNotBlank() && !model.startsWith("N/A"))
                     }
                     "openrouter" -> {
-                        val modelStr = provider
                         val command = """ANTHROPIC_BASE_URL=https://openrouter.ai/api/v1 \
                             ANTHROPIC_AUTH_TOKEN=openrouter \
                             AGENT_BACKEND=openrouter \
                             CLAUDE_CODE_MAX_OUTPUT_TOKENS=16000 \
                             CLAUDE_CODE_DISABLE_BUNDLED_SKILLS=1 \
-                            claude --model $modelStr"""
+                            claude --model $model"""
                         LaunchConfig(command, runCommand = true)
                     }
                     else -> LaunchConfig("", runCommand = false)
@@ -96,8 +95,8 @@ class ClaudePanelController(
                 }
             }
         }
+        panel.add(dropdownPanel)
 
-        // Add a separator and hint text
         panel.add(Box.createVerticalGlue())
         val hint = JBLabel("<html><center>The panel returns to this menu<br>when the process exits.</center></html>")
         hint.foreground = hint.foreground?.let { java.awt.Color(it.red, it.green, it.blue, 128) }

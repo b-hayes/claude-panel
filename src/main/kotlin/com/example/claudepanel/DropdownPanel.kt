@@ -52,7 +52,7 @@ class DropdownPanel : JPanel() {
         repopulating = true
         modelBox.removeAllItems()
         when (provider.lowercase()) {
-            "default" -> modelBox.addItem("default")
+            "default" -> modelBox.addItem("claude-opus-4-8")
             "ollama" -> {
                 if (isOllamaAvailable()) {
                     listOf("qwen3.5:9b", "qwen2.5-coder:14b", "glm-4.7-flash:latest")

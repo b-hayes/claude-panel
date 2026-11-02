@@ -12,15 +12,17 @@ Same provider options the Argus UI offers, run by hand from a terminal on anothe
 
 The panel now uses a dropdown selector with two columns: **(Provider)** | **(Model)**.
 
+Selecting a model launches a terminal that runs the matching command. Every command sets `MAX_THINKING_TOKENS=0 CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1` and appends the project system prompt.
+
 ### Default Provider
 
 - **Provider**: default
-- **Model**: default
-- **Behavior**: Launches the claude TUI without arguments. You can then select any model via `claude --model <name>` in the terminal before pressing Enter.
+- **Model**: claude-opus-4-8
+- **Command**: `MAX_THINKING_TOKENS=0 CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1 claude --model claude-opus-4-8 --append-system-prompt "..."`
 
 ### Ollama Provider
 
-Only available if the `ollama` command exists on your PATH.
+Only available if the `ollama` command exists on your PATH. Always uses local Ollama at `http://localhost:11434`.
 
 **Models to choose from:**
 
@@ -30,7 +32,7 @@ Only available if the `ollama` command exists on your PATH.
 | qwen2.5-coder:14b | Coder-focused model |
 | glm-4.7-flash:latest | Flash-style fast model |
 
-**Environment:** Uses local Ollama at `http://localhost:11434` with `ANTHROPIC_AUTH_TOKEN=ollama`.
+**Environment:** `ANTHROPIC_BASE_URL=http://localhost:11434`, `ANTHROPIC_AUTH_TOKEN=ollama`, `AGENT_BACKEND=host`, `CLAUDE_CODE_MAX_OUTPUT_TOKENS=16000`, `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS=1`.
 
 ### OpenRouter Provider
 
@@ -44,7 +46,7 @@ Uses the OpenRouter API at `https://openrouter.ai/api/v1`.
 | z-ai/glm-5.3-flash | Even cheaper quantized version |
 | cohere/north-mini-code:free | Free model for testing if it works |
 
-**Environment:** `ANTHROPIC_BASE_URL=https://openrouter.ai/api/v1`, `ANTHROPIC_AUTH_TOKEN=openrouter`.
+**Environment:** `ANTHROPIC_BASE_URL=https://openrouter.ai/api/v1`, `ANTHROPIC_AUTH_TOKEN=openrouter`, `AGENT_BACKEND=openrouter`, `CLAUDE_CODE_MAX_OUTPUT_TOKENS=16000`, `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS=1`.
 
 ## Anthropic cloud
 

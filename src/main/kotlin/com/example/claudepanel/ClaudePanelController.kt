@@ -39,7 +39,6 @@ class ClaudePanelController(
     private val card = CardLayout()
     private var currentWidget: ShellTerminalWidget? = null
     private var currentSession: Disposable? = null
-    private var dropdownPanel: DropdownPanel? = null
 
     init {
         layout = card
@@ -70,12 +69,9 @@ class ClaudePanelController(
         panel.add(title)
         panel.add(Box.createVerticalStrut(12))
 
-        // Replace static buttons with dropdown panel
-        dropdownPanel = createProviderModelSelector()
-
-        // Wire up the dropdown panel callback
-        dropdownPanel?.let { panel ->
-            panel.setOnChange { provider, model ->
+        // Create dropdown panel inline and wire up callback immediately
+        val dropdownPanel = DropdownPanel().apply {
+            setOnChange { provider, model ->
                 val config = when (provider.lowercase()) {
                     "default" -> LaunchConfig("claude --model $model", runCommand = false)
                     "ollama" -> {
@@ -83,13 +79,13 @@ class ClaudePanelController(
                         LaunchConfig(ollamaCmd, model.isNotBlank() && !model.startsWith("N/A"))
                     }
                     "openrouter" -> {
-                        val model = provider
+                        val modelStr = provider
                         val command = """ANTHROPIC_BASE_URL=https://openrouter.ai/api/v1 \
                             ANTHROPIC_AUTH_TOKEN=openrouter \
                             AGENT_BACKEND=openrouter \
                             CLAUDE_CODE_MAX_OUTPUT_TOKENS=16000 \
                             CLAUDE_CODE_DISABLE_BUNDLED_SKILLS=1 \
-                            claude --model $model"""
+                            claude --model $modelStr"""
                         LaunchConfig(command, runCommand = true)
                     }
                     else -> LaunchConfig("", runCommand = false)
@@ -109,11 +105,6 @@ class ClaudePanelController(
         panel.add(hint)
 
         return panel
-    }
-
-    private fun createProviderModelSelector(): DropdownPanel {
-        val dropdown = DropdownPanel()
-        return dropdown
     }
 
     private fun launch(command: String) {
